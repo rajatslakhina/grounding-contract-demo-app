@@ -113,7 +113,7 @@ struct DemoAnswer: Identifiable, Hashable {
         DemoAnswer(
             id: "ungrounded",
             label: "Nothing grounded",
-            detail: "Redaction has nothing left to keep",
+            detail: "Both claims unsupported",
             text: """
             Kubernetes autoscaling was disabled for the nightly worker pool. \
             Terraform drift was reconciled by the nightly planner job.
