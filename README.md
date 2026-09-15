@@ -18,23 +18,25 @@ The interesting case is not the obviously wrong answer. It's this one:
 
 ## What you can do in it
 
-Six candidate answers, each hitting a different branch of the contract:
+Six candidate answers. The **Outcome** column is what the app actually shows on the default contract (`redact`, support threshold 0.6, redaction budget 0.5) — and the interesting part is that four of them refuse for the *same* structural reason, which is itself the lesson:
 
-| Answer | What it demonstrates |
-|---|---|
-| **Mixed** *(default)* | One grounded claim, one invented one → **redacted**, the invented sentence disappears |
-| **Wrong number** | 64 MB against a corpus that says 48 MB → `numericMismatch`, uncorroborated figure `64` named |
-| **Wrong identifier** | `INC-9115` against `INC-9114` → caught by the same channel; identifiers get no tolerance |
-| **Fully grounded** | Two claims, both cited, coverage 1.000 → **answered** |
-| **Half invented** | Real subject, invented mechanism → coverage 0.407 → `weaklySupported`, reported but not shippable |
-| **Nothing grounded** | Redaction would remove everything → escalates to **refusal** rather than returning a shredded paragraph |
+| Answer | Per-claim verdict | Outcome on the default contract |
+|---|---|---|
+| **Mixed** *(default)* | 1 × `supported`, 1 × `unsupported` · `insufficientCoverage` | **Redacted** — the invented sentence disappears, the cited one stays |
+| **Wrong number** | `unsupported` · `numericMismatch` · uncorroborated `64` | **Refused** — it is the only claim, so cutting it removes 100% of the answer, over the 50% budget |
+| **Wrong identifier** | `unsupported` · `numericMismatch` · uncorroborated `inc-9115` | **Refused** — same reason |
+| **Fully grounded** | 2 × `supported`, coverage 1.000 | **Answered** — nothing removed |
+| **Half invented** | `weaklySupported`, coverage 0.407 | **Refused** — weak is below the bar, and it is the only claim |
+| **Nothing grounded** | 2 × `unsupported` · `insufficientCoverage` | **Refused** — both claims cut, 100% of the answer |
 
-Two contract controls at the top of the report:
+That "100% of a one-sentence answer" collapse is not a bug in the demo, it is what the redaction budget *means*: `.redact` degrades gracefully only when there is something left to degrade to. Switch **On unsupported claim** to `annotate` to see every per-claim verdict with enforcement turned off, or to `refuse` to see the strict reading.
 
-- **On unsupported claim** — `annotate` / `redact` / `refuse`
-- **Enforce numeric literals** — the load-bearing toggle described above
+Two contract controls sit at the top of the report:
 
-The default state is already interesting: the app opens on **Mixed** with the default `.redact` policy, so the first thing you see is one claim cited and one claim cut.
+- **On unsupported claim** — a segmented picker: `annotate` / `redact` / `refuse`
+- **Enforce numeric literals** — a switch, and the load-bearing one described above
+
+The default state is already interesting: the app opens on **Mixed** under `.redact`, so the first thing you see is one claim cited and one claim cut.
 
 ## Screenshots
 
@@ -50,8 +52,8 @@ Three attempts were made, one of them narrowed to Simulator alone. No `Demo/Scre
 
 Two separate claims, stated separately, because conflating them is how "it builds" gets sold as "it works":
 
-1. **The library's logic is verified.** 77 XCTest cases pass on Swift 6.0.3 in Swift 6 language mode, after a wiped `.build`, with `swift build -Xswiftc -warnings-as-errors` clean. Every number in the table above is pinned by an assertion in that suite, not taken from a screenshot and not taken from a description.
-2. **Whether this app compiles is answered by CI, not by this sentence.** The `macos-15` job runs `xcodebuild -resolvePackageDependencies` — which resolves `grounding-contract-kit` **from GitHub at tag `v1.0.0`**, not from a local path — and then `xcodebuild build -scheme Demo -destination 'generic/platform=iOS Simulator'`, which compiles the whole app target including every SwiftUI view. The authoritative answer is the [Actions tab](../../actions); a result asserted in prose here would go stale on the next commit, and a result asserted *before* the job had ever run would simply be a fabrication.
+1. **The library's logic is verified, and so is this README's table.** 88 XCTest cases pass on Swift 6.0.3 in Swift 6 language mode, after a wiped `.build`, with `swift build -Xswiftc -warnings-as-errors` clean. This app has no test target — it is an app, and CI compiles it rather than running it — so the six rows above are asserted in the library's `DemoScenarioTests`, against a byte-identical copy of this app's corpus and answers. A row that stopped being true would fail the library's build, not sit here as unchecked prose.
+2. **Whether this app compiles is answered by CI, not by this sentence.** The `macos-15` job runs `xcodebuild -resolvePackageDependencies` — which resolves `grounding-contract-kit` **from GitHub over the version range the project declares** (`upToNextMajorVersion` from 1.1.0), not from a local path and not from a branch — and then `xcodebuild build -scheme Demo -destination 'generic/platform=iOS Simulator'`, which compiles the whole app target including every SwiftUI view. The authoritative answer is the [Actions tab](../../actions); a result asserted in prose here would go stale on the next commit, and a result asserted *before* the job had ever run would simply be a fabrication.
 
 What is **not** verified: that the app launches, that the UI lays out correctly, or that tapping through the six answers behaves as described at runtime. Those claims need a Simulator run, and a Simulator run did not happen.
 
@@ -69,7 +71,7 @@ Requires Xcode 16+ and iOS 17+.
 
 ## Design decisions
 
-**Two repos, not one.** The library repo contains no app target of any kind, and this repo depends on it the way any consumer would: an `XCRemoteSwiftPackageReference` at the real GitHub URL, pinned `upToNextMajorVersion` from **1.0.0**. Not a local path, not `branch = main`. A branch reference means every clone and every CI run resolves whatever `main` happens to be that day, which is the wrong default for something a stranger will open once.
+**Two repos, not one.** The library repo contains no app target of any kind, and this repo depends on it the way any consumer would: an `XCRemoteSwiftPackageReference` at the real GitHub URL over `upToNextMajorVersion` from **1.1.0**. Not a local path, not `branch = main`. A branch reference means every clone and every CI run resolves whatever `main` happens to be that day, which is the wrong default for something a stranger will open once. Stated precisely, because it is the kind of thing READMEs round up: this is a semantic-version *range*, and no `Package.resolved` is committed, so a clone resolves the newest 1.x rather than one frozen commit. That is the intended trade-off for a sample — you get the library's patch fixes — and it is not the same thing as a pin.
 
 **The app owns the content; the library owns the decisions.** `DemoCorpus` and `DemoAnswer` live here — they are the app's compiled-in stand-ins for what `CSSearchQuery` and a `LanguageModelSession` would return. Everything about claims, scoring, citations and enforcement lives in the library. That is the same split a real app has, and it is why the library is testable on Linux with no index, no network and no model.
 
