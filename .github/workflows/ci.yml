@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    # The cheapest honest substitute for a human opening the project: it proves
+    # the version-pinned remote package genuinely resolves from GitHub, and
+    # that the app compiles against it -- SwiftUI views included.
+    #
+    # `generic/platform=iOS Simulator` is deliberate. Pinning to a named device
+    # ties the job to whichever simulator runtimes that day's runner image
+    # happens to ship, and a compile-only check needs no device to exist.
+    name: Resolve package and build for iOS Simulator
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve remote Swift package
+        run: xcodebuild -resolvePackageDependencies -project Demo.xcodeproj -scheme Demo
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project Demo.xcodeproj \
+            -scheme Demo \
+            -destination 'generic/platform=iOS Simulator'
