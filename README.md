@@ -14,7 +14,7 @@ The interesting case is not the obviously wrong answer. It's this one:
 >
 > **Model:** "The image cache evicts entries under a **64 MB** byte budget."
 
-~95% lexically identical. Every embedding cosine, every BM25 overlap, every "is this consistent?" judge prompt scores the fabricated one as supported. The demo lets you flip **Enforce numeric literals** off and watch that exact claim turn green — which is the whole argument for the library in one toggle.
+~95% lexically identical. Every embedding cosine, every BM25 overlap, every "is this consistent?" judge prompt scores the fabricated one as supported. The switch ships **on**, so that answer opens red. Flip **Enforce numeric literals** off and watch the exact same claim turn green — the whole argument for the library, in one switch.
 
 ## What you can do in it
 
@@ -52,7 +52,7 @@ Three attempts were made, one of them narrowed to Simulator alone. No `Demo/Scre
 
 Two separate claims, stated separately, because conflating them is how "it builds" gets sold as "it works":
 
-1. **The library's logic is verified, and so is this README's table.** 88 XCTest cases pass on Swift 6.0.3 in Swift 6 language mode, after a wiped `.build`, with `swift build -Xswiftc -warnings-as-errors` clean. This app has no test target — it is an app, and CI compiles it rather than running it — so the six rows above are asserted in the library's `DemoScenarioTests`, against a byte-identical copy of this app's corpus and answers. A row that stopped being true would fail the library's build, not sit here as unchecked prose.
+1. **The library's logic is verified, and so is this README's table.** 95 XCTest cases pass on Swift 6.0.3 in Swift 6 language mode, after a wiped `.build`, with `swift build -Xswiftc -warnings-as-errors` clean. This app has no test target — it is an app, and CI compiles it rather than running it — so the six rows above are asserted in the library's test suite — `DemoScenarioTests` for the outcomes and per-claim statuses, against a byte-identical copy of this app's corpus and answers, and `GroundingContractEngineTests.testPublishedCoverageFiguresAreGuardedByAnAssertion` for the coverage figures. A row that stopped being true would fail the library's build, not sit here as unchecked prose.
 2. **Whether this app compiles is answered by CI, not by this sentence.** The `macos-15` job runs `xcodebuild -resolvePackageDependencies` — which resolves `grounding-contract-kit` **from GitHub over the version range the project declares** (`upToNextMajorVersion` from 1.1.0), not from a local path and not from a branch — and then `xcodebuild build -scheme Demo -destination 'generic/platform=iOS Simulator'`, which compiles the whole app target including every SwiftUI view. The authoritative answer is the [Actions tab](../../actions); a result asserted in prose here would go stale on the next commit, and a result asserted *before* the job had ever run would simply be a fabrication.
 
 What is **not** verified: that the app launches, that the UI lays out correctly, or that tapping through the six answers behaves as described at runtime. Those claims need a Simulator run, and a Simulator run did not happen.
